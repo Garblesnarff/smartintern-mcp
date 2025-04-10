@@ -1,121 +1,149 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { z } from 'zod';
 import { slackClient } from '../../slack/client';
 import { contextRepository } from '../../db/repository';
 
+/**
+ * Registers Slack message-related tools with the MCP server.
+ * 
+ * @param {McpServer} server - The MCP server instance
+ */
 export function registerMessageTools(server: McpServer) {
-  server.tool({
-    name: 'get_channel_history',
-    description: 'Get recent messages from a Slack channel',
-    parameters: {
-      type: 'object',
-      properties: {
-        channel_id: {
-          type: 'string',
-          description: 'The ID of the channel to get history for'
-        },
-        limit: {
-          type: 'number',
-          description: 'Maximum number of messages to retrieve (defaults to 100)',
-          default: 100
-        }
-      },
-      required: ['channel_id']
+  server.tool(
+    'get_channel_history',
+    'Get recent messages from a Slack channel',
+    {
+      channel_id: z.string().describe('The ID of the channel'),
+      limit: z.number().optional().describe('Max number of messages'),
     },
-    handler: async ({ channel_id, limit = 100 }) => {
+    async ({
+      channel_id,
+      limit = 100,
+    }: {
+      channel_id: string;
+      limit?: number;
+    }) => {
       try {
         const messages = await slackClient.getChannelHistory(channel_id, limit);
-        
-        // Get channel ID from database
+
         const channelResult = await contextRepository.storeChannel({
           id: channel_id,
-          name: '', // Will be updated from Slack if needed
-          is_private: false // Will be updated from Slack if needed
+          name: '',
+          is_private: false,
         });
-        
-        // Store messages in database
+
         for (const message of messages) {
           await contextRepository.storeMessage(message, channelResult.id);
         }
-        
-        return messages;
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(messages, null, 2),
+            },
+          ],
+        };
       } catch (error) {
         console.error(`Error in get_channel_history tool for ${channel_id}:`, error);
-        throw new Error('Failed to get channel history: ' + error.message);
+        if (error instanceof Error) {
+          throw new Error('Failed to get channel history: ' + error.message);
+        } else {
+          throw new Error('Failed to get channel history: ' + String(error));
+        }
       }
     }
-  });
+  );
 
-  server.tool({
-    name: 'get_thread_replies',
-    description: 'Get replies in a threaded Slack conversation',
-    parameters: {
-      type: 'object',
-      properties: {
-        channel_id: {
-          type: 'string',
-          description: 'The ID of the channel containing the thread'
-        },
-        thread_ts: {
-          type: 'string',
-          description: 'The timestamp of the parent message of the thread'
-        }
-      },
-      required: ['channel_id', 'thread_ts']
+  server.tool(
+    'get_thread_replies',
+    'Get replies in a Slack thread',
+    {
+      channel_id: z.string().describe('The ID of the channel'),
+      thread_ts: z.string().describe('Parent message timestamp'),
     },
-    handler: async ({ channel_id, thread_ts }) => {
+    async ({
+      channel_id,
+      thread_ts,
+    }: {
+      channel_id: string;
+      thread_ts: string;
+    }) => {
       try {
         const replies = await slackClient.getThreadReplies(channel_id, thread_ts);
-        
-        // Get channel ID from database
+
         const channelResult = await contextRepository.storeChannel({
           id: channel_id,
-          name: '', // Will be updated from Slack if needed
-          is_private: false // Will be updated from Slack if needed
+          name: '',
+          is_private: false,
         });
-        
-        // Store messages in database
+
         for (const message of replies) {
           await contextRepository.storeMessage(message, channelResult.id);
         }
-        
-        return replies;
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(replies, null, 2),
+            },
+          ],
+        };
       } catch (error) {
-        console.error(`Error in get_thread_replies tool for ${channel_id}/${thread_ts}:`, error);
-        throw new Error('Failed to get thread replies: ' + error.message);
+        console.error(
+          `Error in get_thread_replies tool for ${channel_id}/${thread_ts}:`,
+          error
+        );
+        if (error instanceof Error) {
+          throw new Error('Failed to get thread replies: ' + error.message);
+        } else {
+          throw new Error('Failed to get thread replies: ' + String(error));
+        }
       }
     }
-  });
+  );
 
-  server.tool({
-    name: 'send_message',
-    description: 'Send a message to a Slack channel',
-    parameters: {
-      type: 'object',
-      properties: {
-        channel_id: {
-          type: 'string',
-          description: 'The ID of the channel to send the message to'
-        },
-        text: {
-          type: 'string',
-          description: 'The text content of the message'
-        },
-        thread_ts: {
-          type: 'string',
-          description: 'Optional thread timestamp to reply to a thread',
-          default: undefined
-        }
-      },
-      required: ['channel_id', 'text']
+  server.tool(
+    'send_message',
+    'Send a message to a Slack channel',
+    {
+      channel_id: z.string().describe('The ID of the channel'),
+      text: z.string().describe('Message text'),
+      thread_ts: z.string().optional().describe('Optional thread timestamp'),
     },
-    handler: async ({ channel_id, text, thread_ts }) => {
+    async ({
+      channel_id,
+      text,
+      thread_ts,
+    }: {
+      channel_id: string;
+      text: string;
+      thread_ts?: string;
+    }) => {
       try {
-        const result = await slackClient.postMessage(channel_id, text, thread_ts);
-        return result;
+        const result = await slackClient.postMessage(
+          channel_id,
+          text,
+          thread_ts
+        );
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
       } catch (error) {
         console.error(`Error in send_message tool for ${channel_id}:`, error);
-        throw new Error('Failed to send message: ' + error.message);
+        if (error instanceof Error) {
+          throw new Error('Failed to send message: ' + error.message);
+        } else {
+          throw new Error('Failed to send message: ' + String(error));
+        }
       }
     }
-  });
+  );
 }

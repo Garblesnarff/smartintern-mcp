@@ -22,7 +22,7 @@ export async function startMcpServer() {
 
   // Start the server with stdio transport
   const transport = new StdioServerTransport();
-  await server.start(transport);
+  await server.connect(transport);
   
   console.log('MCP server started');
   return server;
