@@ -142,6 +142,22 @@ export class ContextRepository {
       client.release();
     }
   }
+
+  async getChannelBySlackId(slackId: string) {
+    const client = await pool.connect();
+    try {
+      const result = await client.query(
+        'SELECT * FROM channels WHERE slack_id = $1',
+        [slackId]
+      );
+      return result.rows[0] || null;
+    } catch (error) {
+      console.error('Error fetching channel by Slack ID:', error);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
 }
 
 // Export a singleton instance
