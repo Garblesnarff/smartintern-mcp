@@ -1,109 +1,41 @@
-# SmartIntern MCP Server
+### **SmartIntern MCP: AI-Powered Slack Collaboration with Persistent Memory**
 
-SmartIntern is a Model Context Protocol (MCP) server that connects AI assistants like Claude to Slack, providing context-aware functionality for meeting notes, follow-ups, and insights.
+`smartintern-mcp` transforms generic AI models into proactive digital teammates by solving a fundamental limitation: **AI memory loss**. While standard LLMs forget everything between conversations, this MCP server provides persistent PostgreSQL-backed memory that enables true collaboration within Slack workspaces.
 
-## Features
+**The Problem**: Traditional AI assistants can't remember yesterday's decisions, track ongoing projects, or understand workspace context across conversations.
 
-- **Channel Interaction**: List channels, get channel information
-- **Message Access**: Retrieve conversation history, thread replies
-- **Meeting Notes**: Generate and post meeting notes from conversations
-- **Action Items**: Extract, track, and follow up on action items
-- **Follow-up Management**: Create follow-ups, track status, send reminders
+**The Solution**: A dual-architecture system where real-time Slack event ingestion builds a comprehensive "world model" in a database, while MCP tools enable AI to query this memory and take intelligent actions. This creates the first steps toward genuine AI workplace consciousness—where models understand context, remember commitments, and proactively contribute to team productivity.
 
-## Prerequisites
+### **Key Features**
 
-- Node.js (v18+)
-- PostgreSQL database
-- Slack Bot Token with appropriate permissions
+* **🧠 Persistent AI Memory**: Real-time Slack event ingestion into PostgreSQL creates comprehensive conversation history and workspace context
+* **📝 Intelligent Meeting Synthesis**: Analyzes transcripts to generate structured summaries with extracted action items and key decisions  
+* **✅ Proactive Task Management**: Creates, tracks, and sends reminders for action items identified directly from conversations
+* **💬 Full Slack Integration**: Complete toolset for reading channels, managing threads, and sending contextual messages
+* **🔒 Production-Ready**: TypeScript, Docker containerization, Slack Bolt SDK, and Zod validation for enterprise deployment
+* **🤖 Multi-Agent Framework**: Foundation for exploring emergent collaborative behaviors between AI agents
 
-## Setup
+### **Technology Stack**
 
-1. Clone this repository:
-   ```bash
-   git clone https://github.com/yourusername/smartintern-mcp.git
-   cd smartintern-mcp
-   ```
+* **Backend**: Node.js, TypeScript, Express.js
+* **AI Integration**: Model Context Protocol (MCP) SDK
+* **Database**: PostgreSQL (persistent memory layer)
+* **Slack Integration**: Slack Bolt JS, Slack Web API
+* **Validation**: Zod schema validation
+* **Deployment**: Docker containerization
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+### **Quick Start**
 
-3. Create a `.env` file based on `.env.example`:
-   ```bash
-   cp .env.example .env
-   ```
-
-4. Edit the `.env` file with your Slack and database credentials.
-
-5. Build the project:
-   ```bash
-   npm run build
-   ```
-
-## Setting up Slack Integration
-
-1. Create a Slack App at [api.slack.com/apps](https://api.slack.com/apps)
-2. Add the following Bot Token Scopes:
-   - `channels:history`
-   - `channels:read`
-   - `chat:write`
-   - `groups:history`
-   - `groups:read`
-   - `im:history`
-   - `users:read`
-   - `reactions:read`
-   - `files:read`
-3. Install the app to your workspace
-4. Copy the Bot User OAuth Token to your `.env` file
-
-## Running the Server
+**Prerequisites**: Node.js 18+, PostgreSQL, Slack App with Bot Token
 
 ```bash
-npm start
-```
+# 1. Clone and configure
+git clone [repo-url]
+cp .env.example .env  # Fill in Slack and database credentials
 
-## Usage with Claude
+# 2. Install and build
+npm install
+npm run build
 
-To use SmartIntern with Claude's desktop app, add the following configuration to your `claude_desktop_config.json` file:
-
-```json
-{
-  "mcpServers": {
-    "smartintern": {
-      "command": "node",
-      "args": ["/path/to/smartintern-mcp/dist/index.js"],
-      "env": {
-        "SLACK_BOT_TOKEN": "xoxb-your-token-here",
-        "SLACK_SIGNING_SECRET": "your-signing-secret-here"
-      }
-    }
-  }
-}
-```
-
-## MCP Tools
-
-SmartIntern provides several tools for AI assistants:
-
-### Channel Tools
-- `list_channels`: List available Slack channels
-- `get_channel_info`: Get detailed information about a specific channel
-
-### Message Tools
-- `get_channel_history`: Get recent messages from a channel
-- `get_thread_replies`: Get replies in a conversation thread
-- `send_message`: Send a message to a channel or thread
-
-### Note Tools
-- `create_meeting_notes`: Create and post meeting notes from a conversation
-- `extract_action_items`: Extract action items from a conversation
-
-### Follow-up Tools
-- `create_follow_up`: Create a follow-up reminder for an action item
-- `track_follow_up_status`: Get or update the status of follow-ups
-- `remind_action_items`: Send reminders for open action items
-
-## License
-
-MIT
+# 3. Launch dual servers
+npm start  # Starts both MCP server (AI interface) and Events server (memory ingestion)
