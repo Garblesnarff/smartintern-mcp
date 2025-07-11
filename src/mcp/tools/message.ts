@@ -2,10 +2,11 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { slackClient } from '../../slack/client';
 import { contextRepository } from '../../db/repository';
+import { toolWrapper } from './errors';
 
 /**
  * Registers Slack message-related tools with the MCP server.
- * 
+ *
  * @param {McpServer} server - The MCP server instance
  */
 export function registerMessageTools(server: McpServer) {
@@ -16,14 +17,9 @@ export function registerMessageTools(server: McpServer) {
       channel_id: z.string().describe('The ID of the channel'),
       limit: z.number().optional().describe('Max number of messages'),
     },
-    async ({
-      channel_id,
-      limit = 100,
-    }: {
-      channel_id: string;
-      limit?: number;
-    }) => {
-      try {
+    toolWrapper(
+      'get_channel_history',
+      async ({ channel_id, limit = 100 }: { channel_id: string; limit?: number }) => {
         const messages = await slackClient.getChannelHistory(channel_id, limit);
 
         const channelResult = await contextRepository.storeChannel({
@@ -44,15 +40,8 @@ export function registerMessageTools(server: McpServer) {
             },
           ],
         };
-      } catch (error) {
-        console.error(`Error in get_channel_history tool for ${channel_id}:`, error);
-        if (error instanceof Error) {
-          throw new Error('Failed to get channel history: ' + error.message);
-        } else {
-          throw new Error('Failed to get channel history: ' + String(error));
-        }
-      }
-    }
+      },
+    ),
   );
 
   server.tool(
@@ -62,14 +51,9 @@ export function registerMessageTools(server: McpServer) {
       channel_id: z.string().describe('The ID of the channel'),
       thread_ts: z.string().describe('Parent message timestamp'),
     },
-    async ({
-      channel_id,
-      thread_ts,
-    }: {
-      channel_id: string;
-      thread_ts: string;
-    }) => {
-      try {
+    toolWrapper(
+      'get_thread_replies',
+      async ({ channel_id, thread_ts }: { channel_id: string; thread_ts: string }) => {
         const replies = await slackClient.getThreadReplies(channel_id, thread_ts);
 
         const channelResult = await contextRepository.storeChannel({
@@ -90,18 +74,8 @@ export function registerMessageTools(server: McpServer) {
             },
           ],
         };
-      } catch (error) {
-        console.error(
-          `Error in get_thread_replies tool for ${channel_id}/${thread_ts}:`,
-          error
-        );
-        if (error instanceof Error) {
-          throw new Error('Failed to get thread replies: ' + error.message);
-        } else {
-          throw new Error('Failed to get thread replies: ' + String(error));
-        }
-      }
-    }
+      },
+    ),
   );
 
   server.tool(
@@ -112,21 +86,18 @@ export function registerMessageTools(server: McpServer) {
       text: z.string().describe('Message text'),
       thread_ts: z.string().optional().describe('Optional thread timestamp'),
     },
-    async ({
-      channel_id,
-      text,
-      thread_ts,
-    }: {
-      channel_id: string;
-      text: string;
-      thread_ts?: string;
-    }) => {
-      try {
-        const result = await slackClient.postMessage(
-          channel_id,
-          text,
-          thread_ts
-        );
+    toolWrapper(
+      'send_message',
+      async ({
+        channel_id,
+        text,
+        thread_ts,
+      }: {
+        channel_id: string;
+        text: string;
+        thread_ts?: string;
+      }) => {
+        const result = await slackClient.postMessage(channel_id, text, thread_ts);
 
         return {
           content: [
@@ -136,14 +107,7 @@ export function registerMessageTools(server: McpServer) {
             },
           ],
         };
-      } catch (error) {
-        console.error(`Error in send_message tool for ${channel_id}:`, error);
-        if (error instanceof Error) {
-          throw new Error('Failed to send message: ' + error.message);
-        } else {
-          throw new Error('Failed to send message: ' + String(error));
-        }
-      }
-    }
+      },
+    ),
   );
 }

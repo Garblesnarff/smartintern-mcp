@@ -7,7 +7,7 @@ export const pool = new Pool({
   port: config.database.port,
   database: config.database.database,
   user: config.database.user,
-  password: config.database.password
+  password: config.database.password,
 });
 
 // Initialize database tables
@@ -73,7 +73,7 @@ export async function initializeDatabase() {
         created_at TIMESTAMP NOT NULL DEFAULT NOW()
       );
     `);
-    
+
     console.log('Database initialized successfully');
   } catch (error) {
     console.error('Failed to initialize database:', error);

@@ -10,7 +10,7 @@ export class ContextRepository {
          ON CONFLICT (slack_id) DO UPDATE
          SET name = $2, is_private = $3
          RETURNING id`,
-        [channelData.id, channelData.name, channelData.is_private]
+        [channelData.id, channelData.name, channelData.is_private],
       );
       return result.rows[0];
     } catch (error) {
@@ -37,8 +37,8 @@ export class ContextRepository {
           messageData.text,
           new Date(parseFloat(messageData.ts) * 1000),
           messageData.thread_ts,
-          !!messageData.attachments
-        ]
+          !!messageData.attachments,
+        ],
       );
       return result.rows[0];
     } catch (error) {
@@ -64,8 +64,8 @@ export class ContextRepository {
           notesData.end_ts,
           notesData.participants,
           JSON.stringify(notesData.action_items),
-          JSON.stringify(notesData.decisions)
-        ]
+          JSON.stringify(notesData.decisions),
+        ],
       );
       return result.rows[0];
     } catch (error) {
@@ -89,8 +89,8 @@ export class ContextRepository {
           actionItem.due_date ? new Date(actionItem.due_date) : null,
           actionItem.status || 'open',
           channelId,
-          messageId
-        ]
+          messageId,
+        ],
       );
       return result.rows[0];
     } catch (error) {
@@ -109,7 +109,7 @@ export class ContextRepository {
          WHERE channel_id = $1
          ORDER BY timestamp DESC
          LIMIT $2`,
-        [channelId, limit]
+        [channelId, limit],
       );
       return result.rows;
     } catch (error) {
@@ -126,7 +126,7 @@ export class ContextRepository {
       let query = `SELECT a.*, c.name as channel_name 
                   FROM action_items a
                   JOIN channels c ON a.channel_id = c.id`;
-      
+
       if (status) {
         query += ` WHERE a.status = $1`;
         const result = await client.query(query, [status]);

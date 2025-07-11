@@ -12,7 +12,7 @@ export class SlackClient {
     try {
       const result = await this.client.conversations.list({
         exclude_archived: true,
-        types: 'public_channel,private_channel'
+        types: 'public_channel,private_channel',
       });
       return result.channels || [];
     } catch (error) {
@@ -25,7 +25,7 @@ export class SlackClient {
     try {
       const result = await this.client.conversations.history({
         channel: channelId,
-        limit
+        limit,
       });
       return result.messages || [];
     } catch (error) {
@@ -38,7 +38,7 @@ export class SlackClient {
     try {
       const result = await this.client.conversations.replies({
         channel: channelId,
-        ts: threadTs
+        ts: threadTs,
       });
       return result.messages || [];
     } catch (error) {
@@ -50,7 +50,7 @@ export class SlackClient {
   async getUserInfo(userId: string) {
     try {
       const result = await this.client.users.info({
-        user: userId
+        user: userId,
       });
       return result.user;
     } catch (error) {
@@ -64,7 +64,7 @@ export class SlackClient {
       const result = await this.client.chat.postMessage({
         channel: channelId,
         text,
-        thread_ts: threadTs
+        thread_ts: threadTs,
       });
       return result;
     } catch (error) {

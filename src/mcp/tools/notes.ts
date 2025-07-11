@@ -5,7 +5,7 @@ import { contextRepository } from '../../db/repository';
 
 /**
  * Registers meeting notes related tools with the MCP server.
- * 
+ *
  * @param {McpServer} server - The MCP server instance
  */
 export function registerNoteTools(server: McpServer) {
@@ -19,28 +19,26 @@ export function registerNoteTools(server: McpServer) {
       title: z.string().describe('Meeting title'),
       post_to_channel: z.boolean().optional().describe('Post notes to channel'),
     },
-    async ({
-      channel_id,
-      start_ts,
-      end_ts,
-      title,
-      post_to_channel = true,
-    }: {
-      channel_id: string;
-      start_ts: string;
-      end_ts: string;
-      title: string;
-      post_to_channel?: boolean;
-    }) => {
-      try {
+    toolWrapper(
+      'create_meeting_notes',
+      async ({
+        channel_id,
+        start_ts,
+        end_ts,
+        title,
+        post_to_channel = true,
+      }: {
+        channel_id: string;
+        start_ts: string;
+        end_ts: string;
+        title: string;
+        post_to_channel?: boolean;
+      }) => {
         const channelInfo = await slackClient.client.conversations.info({
           channel: channel_id,
         });
 
-        const allMessages = await slackClient.getChannelHistory(
-          channel_id,
-          1000
-        );
+        const allMessages = await slackClient.getChannelHistory(channel_id, 1000);
 
         const meetingMessages = allMessages.filter((msg) => {
           const ts = msg.ts ? parseFloat(msg.ts) : 0;
@@ -51,16 +49,14 @@ export function registerNoteTools(server: McpServer) {
           throw new Error('No messages found in the specified time range');
         }
 
-        const participantIds = [
-          ...new Set(meetingMessages.map((msg) => msg.user)),
-        ];
+        const participantIds = [...new Set(meetingMessages.map((msg) => msg.user))];
 
         const participants = await Promise.all(
           participantIds.map(async (id) => {
             if (!id) return 'Unknown';
             const user = await slackClient.getUserInfo(id);
             return user?.real_name || user?.name || id;
-          })
+          }),
         );
 
         const actionItems: any[] = [];
@@ -72,9 +68,7 @@ export function registerNoteTools(server: McpServer) {
           if (
             text.includes('action item') ||
             text.includes('todo') ||
-            (msg.text ?? '').match(
-              /(?:@\w+|<@[^>]+>).*\b(?:will|should|needs? to|must)\b/i
-            )
+            (msg.text ?? '').match(/(?:@\w+|<@[^>]+>).*\b(?:will|should|needs? to|must)\b/i)
           ) {
             actionItems.push({
               description: msg.text ?? '',
@@ -99,9 +93,7 @@ export function registerNoteTools(server: McpServer) {
           `Meeting in #${channelInfo.channel?.name || channel_id}\n\n` +
           `**Participants:** ${participants.join(', ')}\n\n` +
           `**Discussion Summary:**\n` +
-          `Meeting started at ${new Date(
-            parseFloat(start_ts) * 1000
-          ).toLocaleString()}\n` +
+          `Meeting started at ${new Date(parseFloat(start_ts) * 1000).toLocaleString()}\n` +
           `${meetingMessages.length} messages exchanged\n\n` +
           `**Action Items:**\n` +
           (actionItems.length > 0
@@ -131,10 +123,7 @@ export function registerNoteTools(server: McpServer) {
         await contextRepository.storeMeetingNotes(meetingNotes, channelResult.id);
 
         if (post_to_channel) {
-          await slackClient.postMessage(
-            channel_id,
-            `*${title} - Meeting Notes*\n\n${summary}`
-          );
+          await slackClient.postMessage(channel_id, `*${title} - Meeting Notes*\n\n${summary}`);
         }
 
         for (const item of actionItems) {
@@ -155,20 +144,13 @@ export function registerNoteTools(server: McpServer) {
                   posted: post_to_channel,
                 },
                 null,
-                2
+                2,
               ),
             },
           ],
         };
-      } catch (error) {
-        console.error(`Error in create_meeting_notes tool for ${channel_id}:`, error);
-        if (error instanceof Error) {
-          throw new Error('Failed to create meeting notes: ' + error.message);
-        } else {
-          throw new Error('Failed to create meeting notes: ' + String(error));
-        }
-      }
-    }
+      },
+    ),
   );
 
   server.tool(
@@ -180,26 +162,24 @@ export function registerNoteTools(server: McpServer) {
       end_ts: z.string().optional().describe('End timestamp'),
       post_summary: z.boolean().optional().describe('Post summary to channel'),
     },
-    async ({
-      channel_id,
-      start_ts = '0',
-      end_ts = String(Date.now() / 1000),
-      post_summary = false,
-    }: {
-      channel_id: string;
-      start_ts?: string;
-      end_ts?: string;
-      post_summary?: boolean;
-    }) => {
-      try {
+    toolWrapper(
+      'extract_action_items',
+      async ({
+        channel_id,
+        start_ts = '0',
+        end_ts = String(Date.now() / 1000),
+        post_summary = false,
+      }: {
+        channel_id: string;
+        start_ts?: string;
+        end_ts?: string;
+        post_summary?: boolean;
+      }) => {
         const channelInfo = await slackClient.client.conversations.info({
           channel: channel_id,
         });
 
-        const allMessages = await slackClient.getChannelHistory(
-          channel_id,
-          1000
-        );
+        const allMessages = await slackClient.getChannelHistory(channel_id, 1000);
 
         const timeframeMessages = allMessages.filter((msg) => {
           const ts = msg.ts ? parseFloat(msg.ts) : 0;
@@ -218,9 +198,7 @@ export function registerNoteTools(server: McpServer) {
           if (
             text.includes('action item') ||
             text.includes('todo') ||
-            (msg.text ?? '').match(
-              /(?:@\w+|<@[^>]+>).*\b(?:will|should|needs? to|must)\b/i
-            )
+            (msg.text ?? '').match(/(?:@\w+|<@[^>]+>).*\b(?:will|should|needs? to|must)\b/i)
           ) {
             const mentionMatch = (msg.text ?? '').match(/<@([A-Z0-9]+)>/);
             const assigneeId = mentionMatch ? mentionMatch[1] : msg.user;
@@ -247,10 +225,7 @@ export function registerNoteTools(server: McpServer) {
           const summary =
             `*Action Items Extracted:*\n\n` +
             actionItems
-              .map(
-                (item) =>
-                  `• ${item.description}\n   _Assigned to: <@${item.assignee}>_`
-              )
+              .map((item) => `• ${item.description}\n   _Assigned to: <@${item.assignee}>_`)
               .join('\n\n');
 
           await slackClient.postMessage(channel_id, summary);
@@ -264,14 +239,7 @@ export function registerNoteTools(server: McpServer) {
             },
           ],
         };
-      } catch (error) {
-        console.error(`Error in extract_action_items tool for ${channel_id}:`, error);
-        if (error instanceof Error) {
-          throw new Error('Failed to extract action items: ' + error.message);
-        } else {
-          throw new Error('Failed to extract action items: ' + String(error));
-        }
-      }
-    }
+      },
+    ),
   );
 }

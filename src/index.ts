@@ -6,13 +6,13 @@ async function main() {
   try {
     // Validate configuration
     validateConfig();
-    
+
     // Initialize database
     await initializeDatabase();
-    
+
     // Start MCP server
     const server = await startMcpServer();
-    
+
     console.log('SmartIntern MCP server started successfully');
   } catch (error) {
     console.error('Failed to start SmartIntern MCP server:', error);

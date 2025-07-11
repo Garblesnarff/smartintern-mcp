@@ -6,7 +6,7 @@ import { pool } from '../../db/models';
 
 /**
  * Registers follow-up related tools with the MCP server.
- * 
+ *
  * @param {McpServer} server - The MCP server instance
  */
 export function registerFollowUpTools(server: McpServer) {
@@ -20,20 +20,21 @@ export function registerFollowUpTools(server: McpServer) {
       due_date: z.string().optional().describe('Optional due date in ISO format'),
       thread_ts: z.string().optional().describe('Optional thread timestamp'),
     },
-    async ({
-      channel_id,
-      description,
-      assignee,
-      due_date,
-      thread_ts,
-    }: {
-      channel_id: string;
-      description: string;
-      assignee?: string;
-      due_date?: string;
-      thread_ts?: string;
-    }) => {
-      try {
+    toolWrapper(
+      'create_follow_up',
+      async ({
+        channel_id,
+        description,
+        assignee,
+        due_date,
+        thread_ts,
+      }: {
+        channel_id: string;
+        description: string;
+        assignee?: string;
+        due_date?: string;
+        thread_ts?: string;
+      }) => {
         const channelInfo = await slackClient.client.conversations.info({
           channel: channel_id,
         });
@@ -56,13 +57,13 @@ export function registerFollowUpTools(server: McpServer) {
         const assigneeMention = assignee ? `<@${assignee}>` : 'Unassigned';
         const dueInfo = due_date ? `Due: ${due_date}` : 'No due date set';
 
-        const followUpMessage = `*Follow-up Reminder:*\n${description}\n*Assigned to:* ${assigneeMention}\n*Status:* Open\n*${dueInfo}*`;
+        const followUpMessage = `*Follow-up Reminder:*
+${description}
+*Assigned to:* ${assigneeMention}
+*Status:* Open
+*${dueInfo}*`;
 
-        const result = await slackClient.postMessage(
-          channel_id,
-          followUpMessage,
-          thread_ts
-        );
+        const result = await slackClient.postMessage(channel_id, followUpMessage, thread_ts);
 
         return {
           content: [
@@ -77,20 +78,13 @@ export function registerFollowUpTools(server: McpServer) {
                   message_ts: result.ts,
                 },
                 null,
-                2
+                2,
               ),
             },
           ],
         };
-      } catch (error) {
-        console.error(`Error in create_follow_up tool for ${channel_id}:`, error);
-        if (error instanceof Error) {
-          throw new Error('Failed to create follow-up: ' + error.message);
-        } else {
-          throw new Error('Failed to create follow-up: ' + String(error));
-        }
-      }
-    }
+      },
+    ),
   );
 
   server.tool(
@@ -101,52 +95,46 @@ export function registerFollowUpTools(server: McpServer) {
       action_item_id: z.number().optional().describe('Optional action item ID'),
       new_status: z.string().optional().describe('New status if updating'),
     },
-    async ({
-      status,
-      action_item_id,
-      new_status,
-    }: {
-      status?: string;
-      action_item_id?: number;
-      new_status?: string;
-    }) => {
-      try {
+    toolWrapper(
+      'track_follow_up_status',
+      async ({
+        status,
+        action_item_id,
+        new_status,
+      }: {
+        status?: string;
+        action_item_id?: number;
+        new_status?: string;
+      }) => {
         if (action_item_id && new_status) {
           if (!['open', 'completed', 'blocked'].includes(new_status)) {
-            throw new Error(
-              'Invalid status. Must be one of: open, completed, blocked'
-            );
+            throw new Error('Invalid status. Must be one of: open, completed, blocked');
           }
 
           const client = await pool.connect();
           try {
-            await client.query(
-              `UPDATE action_items SET status = $1 WHERE id = $2`,
-              [new_status, action_item_id]
-            );
+            await client.query(`UPDATE action_items SET status = $1 WHERE id = $2`, [
+              new_status,
+              action_item_id,
+            ]);
 
             const result = await client.query(
               `SELECT a.*, c.slack_id as channel_slack_id 
-               FROM action_items a
-               JOIN channels c ON a.channel_id = c.id
-               WHERE a.id = $1`,
-              [action_item_id]
+             FROM action_items a
+             JOIN channels c ON a.channel_id = c.id
+             WHERE a.id = $1`,
+              [action_item_id],
             );
 
             if (result.rows.length === 0) {
-              throw new Error(
-                `Action item with ID ${action_item_id} not found`
-              );
+              throw new Error(`Action item with ID ${action_item_id} not found`);
             }
 
             const actionItem = result.rows[0];
 
             const statusMessage = `*Action Item Status Update:*\n${actionItem.description}\n*Status:* ${new_status}`;
 
-            await slackClient.postMessage(
-              actionItem.channel_slack_id,
-              statusMessage
-            );
+            await slackClient.postMessage(actionItem.channel_slack_id, statusMessage);
 
             return {
               content: [
@@ -161,7 +149,7 @@ export function registerFollowUpTools(server: McpServer) {
                       updated: true,
                     },
                     null,
-                    2
+                    2,
                   ),
                 },
               ],
@@ -180,15 +168,8 @@ export function registerFollowUpTools(server: McpServer) {
             ],
           };
         }
-      } catch (error) {
-        console.error(`Error in track_follow_up_status tool:`, error);
-        if (error instanceof Error) {
-          throw new Error('Failed to track follow-up status: ' + error.message);
-        } else {
-          throw new Error('Failed to track follow-up status: ' + String(error));
-        }
-      }
-    }
+      },
+    ),
   );
 
   server.tool(
@@ -198,28 +179,23 @@ export function registerFollowUpTools(server: McpServer) {
       channel_id: z.string().optional().describe('Optional channel ID'),
       days_overdue: z.number().optional().describe('Days overdue filter'),
     },
-    async ({
-      channel_id,
-      days_overdue = 0,
-    }: {
-      channel_id?: string;
-      days_overdue?: number;
-    }) => {
-      try {
+    toolWrapper(
+      'remind_action_items',
+      async ({ channel_id, days_overdue = 0 }: { channel_id?: string; days_overdue?: number }) => {
         const client = await pool.connect();
         try {
           let query = `
-            SELECT a.*, c.slack_id as channel_slack_id, c.name as channel_name
-            FROM action_items a
-            JOIN channels c ON a.channel_id = c.id
-            WHERE a.status = 'open'
-          `;
+          SELECT a.*, c.slack_id as channel_slack_id, c.name as channel_name
+          FROM action_items a
+          JOIN channels c ON a.channel_id = c.id
+          WHERE a.status = 'open'
+        `;
 
           const queryParams: any[] = [];
           let paramIndex = 1;
 
           if (channel_id) {
-            query += ` AND c.slack_id = $${paramIndex}`;
+            query += ` AND c.slack_id = ${paramIndex}`;
             queryParams.push(channel_id);
             paramIndex++;
           }
@@ -228,7 +204,7 @@ export function registerFollowUpTools(server: McpServer) {
             const cutoffDate = new Date();
             cutoffDate.setDate(cutoffDate.getDate() - days_overdue);
 
-            query += ` AND a.due_date IS NOT NULL AND a.due_date < $${paramIndex}`;
+            query += ` AND a.due_date IS NOT NULL AND a.due_date < ${paramIndex}`;
             queryParams.push(cutoffDate);
             paramIndex++;
           }
@@ -239,19 +215,18 @@ export function registerFollowUpTools(server: McpServer) {
           const remindersSent = [];
 
           for (const item of actionItems) {
-            const assigneeMention = item.assignee
-              ? `<@${item.assignee}>`
-              : 'Unassigned';
+            const assigneeMention = item.assignee ? `<@${item.assignee}>` : 'Unassigned';
             const dueInfo = item.due_date
               ? `Due date: ${new Date(item.due_date).toLocaleDateString()}`
               : 'No due date set';
 
-            const reminderMessage = `*Action Item Reminder:*\n${item.description}\n*Assigned to:* ${assigneeMention}\n*${dueInfo}*\n*Status:* ${item.status}`;
+            const reminderMessage = `*Action Item Reminder:*
+${item.description}
+*Assigned to:* ${assigneeMention}
+*${dueInfo}*
+*Status:* ${item.status}`;
 
-            await slackClient.postMessage(
-              item.channel_slack_id,
-              reminderMessage
-            );
+            await slackClient.postMessage(item.channel_slack_id, reminderMessage);
 
             remindersSent.push({
               id: item.id,
@@ -272,7 +247,7 @@ export function registerFollowUpTools(server: McpServer) {
                     action_items: remindersSent,
                   },
                   null,
-                  2
+                  2,
                 ),
               },
             ],
@@ -280,14 +255,7 @@ export function registerFollowUpTools(server: McpServer) {
         } finally {
           client.release();
         }
-      } catch (error) {
-        console.error(`Error in remind_action_items tool:`, error);
-        if (error instanceof Error) {
-          throw new Error('Failed to remind action items: ' + error.message);
-        } else {
-          throw new Error('Failed to remind action items: ' + String(error));
-        }
-      }
-    }
+      },
+    ),
   );
 }

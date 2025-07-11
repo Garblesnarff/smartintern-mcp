@@ -6,7 +6,7 @@ import { toolWrapper } from './errors';
 
 /**
  * Registers Slack channel-related tools with the MCP server.
- * 
+ *
  * @param {McpServer} server - The MCP server instance
  */
 export function registerChannelTools(server: McpServer) {
@@ -36,7 +36,7 @@ export function registerChannelTools(server: McpServer) {
           },
         ],
       };
-    })
+    }),
   );
 
   server.tool(
@@ -62,6 +62,6 @@ export function registerChannelTools(server: McpServer) {
           },
         ],
       };
-    })
+    }),
   );
 }
