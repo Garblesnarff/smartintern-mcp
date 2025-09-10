@@ -31,7 +31,7 @@ export function registerChannelTools(server: McpServer) {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: JSON.stringify(simplified, null, 2),
           },
         ],
@@ -57,7 +57,7 @@ export function registerChannelTools(server: McpServer) {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: JSON.stringify(info.channel, null, 2),
           },
         ],

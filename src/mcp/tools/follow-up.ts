@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { slackClient } from '../../slack/client';
 import { contextRepository } from '../../db/repository';
 import { pool } from '../../db/models';
+import { toolWrapper } from './errors';
 
 /**
  * Registers follow-up related tools with the MCP server.
@@ -68,7 +69,7 @@ ${description}
         return {
           content: [
             {
-              type: 'text',
+              type: 'text' as const,
               text: JSON.stringify(
                 {
                   description,
@@ -139,7 +140,7 @@ ${description}
             return {
               content: [
                 {
-                  type: 'text',
+                  type: 'text' as const,
                   text: JSON.stringify(
                     {
                       id: actionItem.id,
@@ -162,7 +163,7 @@ ${description}
           return {
             content: [
               {
-                type: 'text',
+                type: 'text' as const,
                 text: JSON.stringify(actionItems, null, 2),
               },
             ],
@@ -240,7 +241,7 @@ ${item.description}
           return {
             content: [
               {
-                type: 'text',
+                type: 'text' as const,
                 text: JSON.stringify(
                   {
                     reminders_sent: remindersSent.length,

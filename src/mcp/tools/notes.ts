@@ -2,6 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { slackClient } from '../../slack/client';
 import { contextRepository } from '../../db/repository';
+import { toolWrapper } from './errors';
 
 /**
  * Registers meeting notes related tools with the MCP server.
@@ -133,7 +134,7 @@ export function registerNoteTools(server: McpServer) {
         return {
           content: [
             {
-              type: 'text',
+              type: 'text' as const,
               text: JSON.stringify(
                 {
                   title,
@@ -234,7 +235,7 @@ export function registerNoteTools(server: McpServer) {
         return {
           content: [
             {
-              type: 'text',
+              type: 'text' as const,
               text: JSON.stringify(actionItems, null, 2),
             },
           ],

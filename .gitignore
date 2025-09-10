@@ -31,7 +31,9 @@ build/
 *.njsproj
 *.sln
 *.sw?
-
+assessment.md
+MONETIZATION_PLAN.md
+TYPESCRIPT_ERRORS_NOTE.md
 # OS files
 .DS_Store
 Thumbs.db

@@ -35,7 +35,7 @@ export function registerMessageTools(server: McpServer) {
         return {
           content: [
             {
-              type: 'text',
+              type: 'text' as const,
               text: JSON.stringify(messages, null, 2),
             },
           ],
@@ -69,7 +69,7 @@ export function registerMessageTools(server: McpServer) {
         return {
           content: [
             {
-              type: 'text',
+              type: 'text' as const,
               text: JSON.stringify(replies, null, 2),
             },
           ],
@@ -102,7 +102,7 @@ export function registerMessageTools(server: McpServer) {
         return {
           content: [
             {
-              type: 'text',
+              type: 'text' as const,
               text: JSON.stringify(result, null, 2),
             },
           ],

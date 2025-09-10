@@ -13,7 +13,7 @@ async function main() {
     // Start MCP server
     const server = await startMcpServer();
 
-    console.log('SmartIntern MCP server started successfully');
+    // console.log('SmartIntern MCP server started successfully');
   } catch (error) {
     console.error('Failed to start SmartIntern MCP server:', error);
     process.exit(1);
